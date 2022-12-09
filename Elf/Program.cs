@@ -176,9 +176,7 @@ namespace Elf
                     }
                 }
             }
-
-            var count = grid.SelectMany(x => x.Where(t => t )).Count();
-            Console.WriteLine(count);
+            Console.WriteLine(grid.SelectMany(x => x.Where(t => t )).Count());
         }
 
         private static void Draw(int size, List<Point> points, Point point)
