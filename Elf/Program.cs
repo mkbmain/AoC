@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -128,14 +125,13 @@ namespace Elf
         public async static Task Day9()
         {
             const int size = 700;
-            const int knots = 9;
-            var grid = Enumerable.Range(0, size).Select(x => Enumerable.Range(0, size).Select(x => false).ToArray())
-                .ToArray();
+            const int knots = 9;         // flip from 1 or 9 for part 1 and 2
             
+            var hash = new HashSet<(int, int)>();
             var input =File.ReadLines("/home/mkb/input.txt");
             var head = new Point(size/2,size/2);
             var tails = Enumerable.Range(0, knots).Select(w => new Point(head.X,head.Y)).ToList();
-            grid[head.X][head.Y] = true;
+            hash.Add((head.X, head.Y));
             foreach (var line in input)
             {
                 var sp = line.Split(" ");
@@ -169,31 +165,14 @@ namespace Elf
                         tail.X += Math.Sign(distanceX);
                         tail.Y += Math.Sign(distanceY);
                         tails[index] = tail;
-                        if (index == knots-1) grid[tail.X][tail.Y] = true;
-                        
+                        if (index == knots - 1 && !hash.Contains((tail.X, tail.Y))) hash.Add((tail.X, tail.Y));
                         sHead = tail;
                         if (nextCurrent == sHead) break;
                     }
                 }
             }
-            Console.WriteLine(grid.SelectMany(x => x.Where(t => t )).Count());
-        }
-
-        private static void Draw(int size, List<Point> points, Point point)
-        {
-            var array = Enumerable.Range(0, size).Select(x => Enumerable.Range(0, size).Select(x => '.').ToArray())
-                .ToArray();
-
-            array[point.Y][point.X] = 'H';
-            for (int i = 0; i < points.Count; i++)
-            {
-                array[points[i].Y][points[i].X] = i.ToString().First();
-            }
-
-            foreach (var item in array)
-            {
-                Console.WriteLine(string.Join("",item));
-            }
+            Console.WriteLine(hash.Count);
+            Console.Read();
         }
 
 
