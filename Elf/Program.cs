@@ -124,39 +124,24 @@ namespace Elf
         {
             await Day9();
         }
-
-        public class RawPoint
-        {
-            public RawPoint(int x, int y)
-            {
-                X = x;
-                Y = y;
-            }
-
-            public int X { get; set; }
-            public int Y { get; set; }
-        }
-
-
+        
         public async static Task Day9()
         {
-            const int size = 3000;
+            const int size = 700;
             const int knots = 9;
-            var grid = Enumerable.Range(0, size).Select(x => Enumerable.Range(0, size).Select(x => 0).ToArray())
+            var grid = Enumerable.Range(0, size).Select(x => Enumerable.Range(0, size).Select(x => false).ToArray())
                 .ToArray();
             
             var input =File.ReadLines("/home/mkb/input.txt");
             var head = new Point(size/2,size/2);
-            var tails = Enumerable.Range(0, knots).Select(w => new RawPoint(head.X,head.Y)).ToList();
-            grid[head.X][head.Y] += 1;
+            var tails = Enumerable.Range(0, knots).Select(w => new Point(head.X,head.Y)).ToList();
+            grid[head.X][head.Y] = true;
             foreach (var line in input)
             {
                 var sp = line.Split(" ");
-                var dir = sp.First();
                 for (int i = 0; i < int.Parse(sp.Last()); i++)
                 {
-                    var start = new Point(head.X, head.Y);
-                    switch (dir)
+                    switch ( sp.First())
                     {
                         case "U":
                             head.Y -= 1;
@@ -171,35 +156,32 @@ namespace Elf
                             head.X -= 1;
                             break;
                     }
-
-                    var current = start;
+                    
                     var sHead = head;
-                    foreach (var tail in tails)
+                    for (var index = 0; index <knots; index++)
                     {
-                        if (current == sHead) continue;
+                        var tail = tails[index];
                         var nextCurrent = new Point(tail.X, tail.Y);
                         var distanceX = sHead.X - tail.X;
                         var distanceY = sHead.Y - tail.Y;
-                        if ((Math.Abs(distanceX) < 2 && Math.Abs(distanceY) < 2)) break;
+                        if (Math.Abs(distanceX) < 2 && Math.Abs(distanceY) < 2) break;
                         
                         tail.X += Math.Sign(distanceX);
                         tail.Y += Math.Sign(distanceY);
-                        if (tails.Last() == tail)
-                        {
-                            grid[tail.X][tail.Y] += 1;
-                        }
-
-                        sHead = new Point(tail.X, tail.Y);
-                        current = nextCurrent;
+                        tails[index] = tail;
+                        if (index == knots-1) grid[tail.X][tail.Y] = true;
+                        
+                        sHead = tail;
+                        if (nextCurrent == sHead) break;
                     }
                 }
             }
 
-            var count = grid.SelectMany(x => x.Where(t => t > 0)).Count();
+            var count = grid.SelectMany(x => x.Where(t => t )).Count();
             Console.WriteLine(count);
         }
 
-        private static void Draw(int size, List<RawPoint> points, Point point)
+        private static void Draw(int size, List<Point> points, Point point)
         {
             var array = Enumerable.Range(0, size).Select(x => Enumerable.Range(0, size).Select(x => '.').ToArray())
                 .ToArray();
