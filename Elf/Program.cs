@@ -130,15 +130,14 @@ namespace Elf
             var cyclesToStopAt = Enumerable.Range(0, 6).Select(i => 20 + (i * 40)).ToHashSet();
             var matrix = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray()).ToArray();
             int registerX = 1, cycle = 0, sum = 0;
-            
+
             void AddCycle()
             {
                 int row = cycle / 40, col = cycle % 40;
                 cycle++;
                 if (cycle > MaxCycles) return;
                 matrix[row][col] = Math.Abs(registerX - col) < 2 ? LetterDot : BackGroundDot;
-                if (!cyclesToStopAt.Contains(cycle)) return;
-                sum += registerX * cycle;
+                if (cyclesToStopAt.Contains(cycle)) sum += registerX * cycle;
             }
 
             foreach (var item in File.ReadLines("/home/mkb/input.txt"))
