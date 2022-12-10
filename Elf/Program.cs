@@ -124,13 +124,13 @@ namespace Elf
 
         public static void Day10()
         {
+            const int MaxCycles = 240;
             const char BackGroundDot = ' '; // they say to use . but find it hard to read 
             const char LetterDot = '#';
             var cyclesToStopAt = Enumerable.Range(0, 6).Select(i => 20 + (i * 40)).ToHashSet();
             var matrix = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray()).ToArray();
-            const int MaxCycles = 240;
             int registerX = 1, cycle = 0, sum = 0;
-
+            
             void AddCycle()
             {
                 int row = cycle / 40, col = cycle % 40;
