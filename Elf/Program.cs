@@ -119,25 +119,81 @@ namespace Elf
     {
         static async Task Main(string[] args)
         {
-            await Day9();
+            await Day10();
         }
-        
+
+        public async static Task Day10()
+        {
+            const char BackGroundDot = ' '; // they say to use . but find it hard to read so used space feel free to change to .
+
+            var array = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray())
+                .ToArray();
+            const int MaxCycles = 240;
+            var registerX = 1;
+            var cycle = 0;
+            var sum = 0;
+            var stopAt = 20;
+            var addCycle = () =>
+            {
+               
+                var row = cycle / 40;
+                var col = cycle % 40;
+                cycle++;
+                if(cycle>MaxCycles)return;
+                
+                array[row][col] = Math.Abs(registerX - col) <2 ? '#' : BackGroundDot;
+                if (cycle == stopAt)
+                {
+                    stopAt += 40;
+                    var total = registerX * cycle;
+                    Console.WriteLine($"{cycle} -- {registerX} -- {total}");
+                    sum += total;
+                }
+            };
+            foreach (var item in File.ReadLines("/home/mkb/input.txt"))
+            {
+                if (cycle > MaxCycles)
+                {
+                    break;
+                }
+
+                if (item == "noop")
+                {
+                    addCycle();
+                    continue;
+                }
+
+                addCycle();
+                addCycle();
+                registerX += int.Parse(item.Split(" ").Last());
+            }
+
+            Console.WriteLine(sum);
+
+            foreach (var item in array)
+            {
+                Console.WriteLine(string.Join("", item));
+            }
+
+            Console.Read();
+        }
+
         public async static Task Day9()
         {
-            const int size = 700;
-            const int knots = 9;         // flip from 1 or 9 for part 1 and 2
-            
+            var items = new[] {1, 2, 3, 4, 5, 6};
+
+            const int knots = 1; // flip from 1 or 9 for part 1 and 2
             var hash = new HashSet<(int, int)>();
-            var input =File.ReadLines("/home/mkb/input.txt");
-            var head = new Point(size/2,size/2);
-            var tails = Enumerable.Range(0, knots).Select(w => new Point(head.X,head.Y)).ToList();
+            var input = File.ReadLines("/home/mkb/input.txt");
+            var head = new Point(0, 0);
+            var tails = Enumerable.Range(0, knots).Select(w => new Point(head.X, head.Y)).ToList();
             hash.Add((head.X, head.Y));
             foreach (var line in input)
             {
                 var sp = line.Split(" ");
                 for (int i = 0; i < int.Parse(sp.Last()); i++)
                 {
-                    switch ( sp.First())
+                    switch (sp.First())
                     {
                         case "U":
                             head.Y -= 1;
@@ -152,16 +208,16 @@ namespace Elf
                             head.X -= 1;
                             break;
                     }
-                    
+
                     var sHead = head;
-                    for (var index = 0; index <knots; index++)
+                    for (var index = 0; index < knots; index++)
                     {
                         var tail = tails[index];
                         var nextCurrent = new Point(tail.X, tail.Y);
                         var distanceX = sHead.X - tail.X;
                         var distanceY = sHead.Y - tail.Y;
                         if (Math.Abs(distanceX) < 2 && Math.Abs(distanceY) < 2) break;
-                        
+
                         tail.X += Math.Sign(distanceX);
                         tail.Y += Math.Sign(distanceY);
                         tails[index] = tail;
@@ -171,6 +227,7 @@ namespace Elf
                     }
                 }
             }
+
             Console.WriteLine(hash.Count);
             Console.Read();
         }
@@ -249,23 +306,6 @@ namespace Elf
 
         public static void Day7()
         {
-            var proceess = System.Diagnostics.Process.GetProcesses().Select(x => x.ProcessName);
-            Console.Write(String.Join(Environment.NewLine, proceess));
-
-
-            var files = System.IO.Directory.GetFiles(Environment.CurrentDirectory);
-
-
-            var random = new Random();
-            const int diceAmount = 2;
-            const int diceSides = 6;
-            var total = Enumerable.Range(0, 100 * 1000)
-                .Select(x => Enumerable.Range(0, diceAmount)
-                    .Select(x => random.Next(1, diceSides + 1)).Sum())
-                .OrderBy(x => x).GroupBy(x => x).ToDictionary(x => x.Key, x => x.Count());
-
-            var output = string.Join(",", total.OrderByDescending(x => x.Value).Select(x => $"{x.Key} - {x.Value}"));
-
             var topLevel = new Directory
             {
                 Name = "/",
@@ -361,7 +401,7 @@ namespace Elf
 
         static void Day4()
         {
-            var answer1 = File.ReadLines("/home/mkb/input.txt").Select(x => x.Split(",").Select(x => x.Split('-'))
+            var answer1 = File.ReadLines("/home/mkb/input.txt").Select(x => x.Split(",").Select(e => e.Split('-'))
                     .Select(x => new {start = int.Parse(x.First()), stop = int.Parse(x.Last())})
                     .Select(x => Enumerable.Range(x.start, x.stop - x.start + 1).ToArray()))
                 .Where(x => x.First().Union(x.Last()).Count() == Math.Max(x.First().Length, x.Last().Length)).ToArray();
