@@ -126,45 +126,40 @@ namespace Elf
         {
             const char BackGroundDot = ' '; // they say to use . but find it hard to read 
             const char LetterDot = '#';
-
-            var array = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray())
-                .ToArray();
+            var cyclesToStopAt = Enumerable.Range(0, 6).Select(i => 20 + (i * 40)).ToHashSet();
+            var matrix = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray()).ToArray();
             const int MaxCycles = 240;
-            var registerX = 1;
-            var cycle = 0;
-            var sum = 0;
-            var stopAt = 20;
-            var addCycle = () =>
+            int registerX = 1, cycle = 0, sum = 0;
+
+            void AddCycle()
             {
-                var row = cycle / 40;
-                var col = cycle % 40;
+                int row = cycle / 40, col = cycle % 40;
                 cycle++;
                 if (cycle > MaxCycles) return;
-
-                array[row][col] = Math.Abs(registerX - col) < 2 ? LetterDot : BackGroundDot;
-                if (cycle != stopAt) return;
-                stopAt += 40;
+                matrix[row][col] = Math.Abs(registerX - col) < 2 ? LetterDot : BackGroundDot;
+                if (!cyclesToStopAt.Contains(cycle)) return;
                 sum += registerX * cycle;
-            };
+            }
+
             foreach (var item in File.ReadLines("/home/mkb/input.txt"))
             {
                 if (cycle > MaxCycles) break;
 
                 if (item == "noop")
                 {
-                    addCycle();
+                    AddCycle();
                     continue;
                 }
 
-                addCycle();
-                addCycle();
+                AddCycle();
+                AddCycle();
                 registerX += int.Parse(item.Split(" ").Last());
             }
 
             Console.WriteLine($"Part 1: {sum}");
             Console.WriteLine($"Part 2:");
 
-            foreach (var item in array)
+            foreach (var item in matrix)
             {
                 Console.WriteLine(string.Join("", item));
             }
