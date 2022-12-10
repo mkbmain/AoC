@@ -119,12 +119,13 @@ namespace Elf
     {
         static async Task Main(string[] args)
         {
-            await Day10();
+            Day10();
         }
 
-        public async static Task Day10()
+        public static void Day10()
         {
-            const char BackGroundDot = ' '; // they say to use . but find it hard to read so used space feel free to change to .
+            const char BackGroundDot = ' '; // they say to use . but find it hard to read 
+            const char LetterDot = '#';
 
             var array = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray())
                 .ToArray();
@@ -135,27 +136,19 @@ namespace Elf
             var stopAt = 20;
             var addCycle = () =>
             {
-               
                 var row = cycle / 40;
                 var col = cycle % 40;
                 cycle++;
-                if(cycle>MaxCycles)return;
-                
-                array[row][col] = Math.Abs(registerX - col) <2 ? '#' : BackGroundDot;
-                if (cycle == stopAt)
-                {
-                    stopAt += 40;
-                    var total = registerX * cycle;
-                    Console.WriteLine($"{cycle} -- {registerX} -- {total}");
-                    sum += total;
-                }
+                if (cycle > MaxCycles) return;
+
+                array[row][col] = Math.Abs(registerX - col) < 2 ? LetterDot : BackGroundDot;
+                if (cycle != stopAt) return;
+                stopAt += 40;
+                sum += registerX * cycle;
             };
             foreach (var item in File.ReadLines("/home/mkb/input.txt"))
             {
-                if (cycle > MaxCycles)
-                {
-                    break;
-                }
+                if (cycle > MaxCycles) break;
 
                 if (item == "noop")
                 {
@@ -168,7 +161,8 @@ namespace Elf
                 registerX += int.Parse(item.Split(" ").Last());
             }
 
-            Console.WriteLine(sum);
+            Console.WriteLine($"Part 1: {sum}");
+            Console.WriteLine($"Part 2:");
 
             foreach (var item in array)
             {
