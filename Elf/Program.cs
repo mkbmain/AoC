@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -119,7 +120,95 @@ namespace Elf
     {
         static async Task Main(string[] args)
         {
-            Day10();
+            Day11();
+        }
+
+        public static void Day11()
+        {
+            const int rounds = 10000;  // part1 =20 , part2 = 1000
+            const bool withRelief = false; // part1=true , part2=false
+            var monkies = File.ReadAllText("/home/mkb/input.txt").Split(Environment.NewLine + Environment.NewLine).Select(x => new Monkey(x))
+                .OrderBy(x => x.Id).ToArray();
+
+            var showAt = new[] {1, 20, 1000,2000,3000,4000,5000,6000,7000,8000,9000};
+            for (int i = 0; i < rounds; i++)
+            {
+                foreach (var monkey in monkies)
+                {
+                    monkey.Turn(monkies,withRelief);
+                }
+
+                if (i % 100 == 0)
+                {
+                    Console.WriteLine($"{i} done");
+                }
+
+                if (showAt.Contains(i+1))
+                {
+             Console.WriteLine();
+             Console.WriteLine();
+             Console.WriteLine(string.Join(Environment.NewLine,monkies.Select(t=> $"{t.Id} -- {t.Inspect}")));
+                }
+            }
+            
+            Console.WriteLine(string.Join(Environment.NewLine,monkies.Select(t=> $"{t.Id} -- {t.Inspect}")));
+            var monkeyBusiness = monkies.OrderByDescending(x => x.Inspect).Take(2).Aggregate(1, (current, e) => current * e.Inspect);
+            Console.WriteLine($"Monkey Buisness = {monkeyBusiness}");
+            Console.Read();
+        }
+
+
+        public class Monkey
+        {
+            private List<BigInteger> Items { get; set; }
+            public int Inspect = 0;
+            public int Id { get; }
+            private int DivisibleBy { get; }
+            private int OnTrue { get; }
+            private int OnFalse { get; }
+
+            private Func<BigInteger, BigInteger> Operation { get; }
+
+
+            public Monkey(string setup)
+            {
+                var lines = setup.Split(Environment.NewLine);
+                Id = int.Parse(lines[0].Split(':').First().Last().ToString());
+                Items = lines[1].Split(":").Last().Split(',').Select(BigInteger.Parse).ToList();
+                var part = lines[2].Split("=").Last()[5..];
+                var numberStr = part.Split(" ").Last();
+                Operation = part.First() == '+'
+                    ? i => i + (numberStr.Contains("old") ? i : int.Parse(numberStr))
+                    : i => i * (numberStr.Contains("old") ? i : int.Parse(numberStr));
+
+
+                DivisibleBy = int.Parse(lines[3].Split(" ").Last());
+                OnTrue = int.Parse(lines[4].Split(" ").Last());
+                OnFalse = int.Parse(lines[5].Split(" ").Last());
+            }
+
+            public void Turn(ICollection<Monkey> monkeys,bool relief)
+            {
+                Inspect += Items.Count;
+                foreach (var item in Items)
+                {
+                    var worry = Operation(item);
+
+                    if (relief)
+                    {
+                        worry /= 3;
+                    }
+                    
+                    monkeys.First(x => x.Id == (worry % DivisibleBy == 0 ? OnTrue : OnFalse)).AddItem(worry);
+                }
+
+                Items.Clear();
+            }
+
+            public void AddItem(BigInteger item)
+            {
+                Items.Add(item);
+            }
         }
 
         public static void Day10()
@@ -129,6 +218,7 @@ namespace Elf
             const char LetterDot = '#';
             var cyclesToStopAt = Enumerable.Range(0, 6).Select(i => 20 + (i * 40)).ToHashSet();
             var matrix = Enumerable.Range(0, 6).Select(x => Enumerable.Range(0, 40).Select(t => BackGroundDot).ToArray()).ToArray();
+
             int registerX = 1, cycle = 0, sum = 0;
 
             void AddCycle()
