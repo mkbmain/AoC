@@ -125,16 +125,19 @@ namespace Elf
 
         public static void Day11()
         {
-            const int rounds = 20; // part1 =20 , part2 = 1000
-            const bool withRelief = true; // part1=true , part2=false
-            var monkies = File.ReadAllText("/home/mkb/input.txt").Split(Environment.NewLine + Environment.NewLine).Select(x => new Monkey(x))
-                .OrderBy(x => x.Id).ToArray();
+            const int rounds = 10000; // part1 =20 , part2 = 1000
+            const bool withRelief = false; // part1=true , part2=false
+            var dictionary = File.ReadAllText("/home/mkb/input.txt").Split(Environment.NewLine + Environment.NewLine).Select(x => new Monkey(x))
+                .GroupBy(x => x.Id)
+                .ToDictionary(x => x.Key, x => x.First());
 
+            var monkies = dictionary.Values;
+            var magicNumber = withRelief ? 0 :monkies.Select(x => x.DivisibleBy).Aggregate((a, b) => (a == 0 ? 1 : a) * b);
             for (int i = 0; i < rounds; i++)
             {
                 foreach (var monkey in monkies)
                 {
-                    monkey.Turn(monkies, withRelief ? i1 => i1/3: i1 =>i1% monkies.Select(x => x.DivisibleBy).Aggregate((a, b) => (a==0?1:a) * b)  );
+                    monkey.Turn(dictionary, withRelief ? i1 => i1/3: i1 =>i1% magicNumber );
                 }
             }
 
@@ -154,8 +157,7 @@ namespace Elf
             private int OnTrue { get; }
             private int OnFalse { get; }
 
-            private char op { get; set; }
-            public int opDo { get; set; }
+            private Func<long, long> Operation { get; }
 
 
             public Monkey(string setup)
@@ -165,32 +167,25 @@ namespace Elf
                 Items = lines[1].Split(":").Last().Split(',').Select(long.Parse).ToList();
                 var part = lines[2].Split("=").Last()[5..];
                 var numberStr = part.Split(" ").Last();
-                op = part.First();
-                opDo = numberStr.Contains("old") ? 0 : int.Parse(numberStr);
+                Operation = part.First() == '+'
+                    ? i => i + (numberStr.Contains("old") ? i : int.Parse(numberStr))
+                    : i => i * (numberStr.Contains("old") ? i : int.Parse(numberStr));
+
+
                 DivisibleBy = int.Parse(lines[3].Split(" ").Last());
                 OnTrue = int.Parse(lines[4].Split(" ").Last());
                 OnFalse = int.Parse(lines[5].Split(" ").Last());
             }
 
-            public void Turn(ICollection<Monkey> monkeys, Func<long,long> relief)
+            public void Turn(Dictionary<int,Monkey> monkeys, Func<long,long> relief)
             {
                 Inspect += Items.Count;
                 foreach (var item in Items)
                 {
-                    var worry = item;
-                    switch (op)
-                    {
-                        case '+':
-                            worry += opDo == 0 ? worry : opDo;
-                            break;
-                        case '*':
-                            worry = opDo == 0 ? worry * worry : worry * opDo;
-                            break;
-                    }
-
+                    var worry = Operation(item);
                     worry = relief(worry);
 
-                    monkeys.First(x => x.Id == (worry % DivisibleBy == 0 ? OnTrue : OnFalse)).AddItem(worry);
+                    monkeys[(worry % DivisibleBy == 0 ? OnTrue : OnFalse)].AddItem(worry);
                 }
 
                 Items.Clear();
