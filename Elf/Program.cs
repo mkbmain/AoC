@@ -125,34 +125,21 @@ namespace Elf
 
         public static void Day11()
         {
-            const int rounds = 10000;  // part1 =20 , part2 = 1000
-            const bool withRelief = false; // part1=true , part2=false
+            const int rounds = 20; // part1 =20 , part2 = 1000
+            const bool withRelief = true; // part1=true , part2=false
             var monkies = File.ReadAllText("/home/mkb/input.txt").Split(Environment.NewLine + Environment.NewLine).Select(x => new Monkey(x))
                 .OrderBy(x => x.Id).ToArray();
 
-            var showAt = new[] {1, 20, 1000,2000,3000,4000,5000,6000,7000,8000,9000};
             for (int i = 0; i < rounds; i++)
             {
                 foreach (var monkey in monkies)
                 {
-                    monkey.Turn(monkies,withRelief);
-                }
-
-                if (i % 100 == 0)
-                {
-                    Console.WriteLine($"{i} done");
-                }
-
-                if (showAt.Contains(i+1))
-                {
-             Console.WriteLine();
-             Console.WriteLine();
-             Console.WriteLine(string.Join(Environment.NewLine,monkies.Select(t=> $"{t.Id} -- {t.Inspect}")));
+                    monkey.Turn(monkies, withRelief ? i1 => i1/3: i1 =>i1% monkies.Select(x => x.DivisibleBy).Aggregate((a, b) => (a==0?1:a) * b)  );
                 }
             }
-            
-            Console.WriteLine(string.Join(Environment.NewLine,monkies.Select(t=> $"{t.Id} -- {t.Inspect}")));
-            var monkeyBusiness = monkies.OrderByDescending(x => x.Inspect).Take(2).Aggregate(1, (current, e) => current * e.Inspect);
+
+            Console.WriteLine(string.Join(Environment.NewLine, monkies.Select(t => $"{t.Id} -- {t.Inspect}")));
+            var monkeyBusiness = monkies.OrderByDescending(x => x.Inspect).Take(2).Aggregate<Monkey, BigInteger>(1, (current, e) => current * e.Inspect);
             Console.WriteLine($"Monkey Buisness = {monkeyBusiness}");
             Console.Read();
         }
@@ -160,52 +147,56 @@ namespace Elf
 
         public class Monkey
         {
-            private List<BigInteger> Items { get; set; }
+            private List<long> Items { get; set; }
             public int Inspect = 0;
             public int Id { get; }
-            private int DivisibleBy { get; }
+            public int DivisibleBy { get; }
             private int OnTrue { get; }
             private int OnFalse { get; }
 
-            private Func<BigInteger, BigInteger> Operation { get; }
+            private char op { get; set; }
+            public int opDo { get; set; }
 
 
             public Monkey(string setup)
             {
                 var lines = setup.Split(Environment.NewLine);
                 Id = int.Parse(lines[0].Split(':').First().Last().ToString());
-                Items = lines[1].Split(":").Last().Split(',').Select(BigInteger.Parse).ToList();
+                Items = lines[1].Split(":").Last().Split(',').Select(long.Parse).ToList();
                 var part = lines[2].Split("=").Last()[5..];
                 var numberStr = part.Split(" ").Last();
-                Operation = part.First() == '+'
-                    ? i => i + (numberStr.Contains("old") ? i : int.Parse(numberStr))
-                    : i => i * (numberStr.Contains("old") ? i : int.Parse(numberStr));
-
-
+                op = part.First();
+                opDo = numberStr.Contains("old") ? 0 : int.Parse(numberStr);
                 DivisibleBy = int.Parse(lines[3].Split(" ").Last());
                 OnTrue = int.Parse(lines[4].Split(" ").Last());
                 OnFalse = int.Parse(lines[5].Split(" ").Last());
             }
 
-            public void Turn(ICollection<Monkey> monkeys,bool relief)
+            public void Turn(ICollection<Monkey> monkeys, Func<long,long> relief)
             {
                 Inspect += Items.Count;
                 foreach (var item in Items)
                 {
-                    var worry = Operation(item);
-
-                    if (relief)
+                    var worry = item;
+                    switch (op)
                     {
-                        worry /= 3;
+                        case '+':
+                            worry += opDo == 0 ? worry : opDo;
+                            break;
+                        case '*':
+                            worry = opDo == 0 ? worry * worry : worry * opDo;
+                            break;
                     }
-                    
+
+                    worry = relief(worry);
+
                     monkeys.First(x => x.Id == (worry % DivisibleBy == 0 ? OnTrue : OnFalse)).AddItem(worry);
                 }
 
                 Items.Clear();
             }
 
-            public void AddItem(BigInteger item)
+            public void AddItem(long item)
             {
                 Items.Add(item);
             }
