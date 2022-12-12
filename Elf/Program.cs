@@ -120,7 +120,109 @@ namespace Elf
     {
         static async Task Main(string[] args)
         {
-            Day11();
+            Day12();
+        }
+
+        public class Square
+        {
+            public Dictionary<Guid, bool> PreviousSteps = new Dictionary<Guid, bool>();
+            public int Id;
+
+            public int Shortest { get; set; } = int.MaxValue;
+            public int Elevation { get; set; }
+            public bool Start { get; set; }
+            public bool End { get; set; }
+
+            public List<Square> AllPaths = new List<Square>();
+        }
+
+        public static void IterateThroughArrayOfArrays<T>(T[][] arrayOfArrays, Func<T[][], int, int, bool> action)
+        {
+            for (int x = 0; x <= arrayOfArrays.Length - 1; x++)
+            {
+                for (int y = 0; y <= arrayOfArrays[x].Length - 1; y++)
+                {
+                    if (action(arrayOfArrays, x, y))
+                        return;
+                }
+            }
+        }
+
+        public static IEnumerable<Point> GetAroungArrayOfArrays<T>(T[][] arrayOfArrays, Point pos)
+        {
+            return new[] {new Point(pos.X - 1, pos.Y), new Point(pos.X + 1, pos.Y), new Point(pos.X, pos.Y - 1), new Point(pos.X, pos.Y + 1)}
+                .Where(t => t.X < arrayOfArrays.Length && t.X > -1)
+                .Where(t => t.Y > -1 && t.Y < arrayOfArrays[t.X].Length).ToArray();
+        }
+
+        public static void Day12()
+        {
+            var StartElevation = 0;
+            var alphabet = "abcdefghijklmnopqrstuvwxyz".ToList();
+            var EndElevation = alphabet.IndexOf('z');
+            var current = new Point();
+            int EndId = 0;
+            var map = File.ReadLines("/home/mkb/input.txt").Select(x => x.ToCharArray().Select(x =>
+            {
+                return x switch
+                {
+                    'S' => new Square {Elevation = StartElevation, Start = true},
+                    'E' => new Square {Elevation = EndElevation, End = true},
+                    _ => new Square {Elevation = alphabet.IndexOf(x)}
+                };
+            }).ToArray()).ToArray();
+            int i = 0;
+            IterateThroughArrayOfArrays(map, (array, x, y) =>
+            {
+                array[x][y].Id = i++;
+                if (array[x][y].Start) current = new Point(x, y);
+                if (array[x][y].End) EndId = array[x][y].Id;
+                var arround = GetAroungArrayOfArrays(map, new Point(x, y));
+                foreach (var item in arround)
+                {
+                    var pos = map[item.X][item.Y];
+                    if (Math.Abs(pos.Elevation - array[x][y].Elevation) >= 2) continue;
+                    array[x][y].AllPaths.Add(pos);
+                }
+
+                return false;
+            });
+
+            var solved = SolveDay12(map[current.X][current.Y], EndId);
+
+            var smalled = solved.Where(x => x.Contains(EndId)).OrderBy(x => x.Count).First();
+            Console.Write($"Done" + smalled.Count);
+            Console.Read();
+        }
+
+        private static HashSet<int> CloneOrNew(HashSet<int> dictionary)
+        {
+            return dictionary is null ? new HashSet<int>() : dictionary.ToHashSet();
+        }
+
+        private static int smallest = int.MaxValue;
+        public  static List<HashSet<int>> SolveDay12(Square square, int end, HashSet<int> lookup = null)
+        {
+            var listDict = new List<HashSet<int>>(){CloneOrNew(lookup)};
+            if (listDict[0].Contains(square.Id) || square.Shortest < listDict[0].Count || smallest < listDict[0].Count)
+            {
+                return listDict;
+            }
+
+            square.Shortest = listDict[0].Count;
+            listDict[0].Add(square.Id);
+            if (square.Id == end)
+            {
+                if (smallest > square.Shortest)
+                {
+                    Console.WriteLine(smallest);
+                    smallest = square.Shortest;
+                }
+                return listDict;
+            }
+            
+
+            return square.AllPaths.OrderByDescending(x=> x.Shortest).SelectMany(item => SolveDay12(item, end, listDict[0])).ToList();
         }
 
         public static void Day11()
@@ -170,9 +272,11 @@ namespace Elf
                 var numberStr = part.Split(" ").Last();
                 var num = numberStr.Contains("old") ? 0 : int.Parse(numberStr);
                 Operation = part.First() == '+'
-                    ? numberStr.Contains("old") ? i => i + i : i=> i + num  
-                    : numberStr.Contains("old")? i => i * i :i=> i * num;
-                
+                    ? numberStr.Contains("old") ? i => i + i : i => i + num
+                    : numberStr.Contains("old")
+                        ? i => i * i
+                        : i => i * num;
+
                 DivisibleBy = int.Parse(lines[3].Split(" ").Last());
                 OnTrue = int.Parse(lines[4].Split(" ").Last());
                 OnFalse = int.Parse(lines[5].Split(" ").Last());
