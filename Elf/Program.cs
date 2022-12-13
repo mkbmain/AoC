@@ -212,14 +212,10 @@ namespace Elf
         {
             var flat = squares.SelectMany(t => t).ToArray();
             var run = true;
-            var items = new List<Square>();
+            var items = flat.Where(x => x.Visited).Where(x => x.AllPaths.Any(w => w.Visited == false)).OrderBy(x => x.Shortest).ToList();
             while (run)
             {
                 var all =items.ToArray();
-                if (all.Any() == false)
-                {
-                    all =flat.Where(x => x.Visited).Where(x => x.AllPaths.Any(w => w.Visited == false)).OrderBy(x => x.Shortest).ToArray();
-                }
 
                 items = new List<Square>();
                 if (all.Any() == false) break;
