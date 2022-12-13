@@ -153,7 +153,7 @@ namespace Elf
             var arrayA = nodeA as JsonArray ?? new JsonArray((int) nodeA);
             var arrayB = nodeB as JsonArray ?? new JsonArray((int) nodeB);
             return arrayA.Zip(arrayB)
-                .Select(p => Compare(p.First, p.Second))
+                .Select(tuple => Compare(tuple.First, tuple.Second))
                 .FirstOrDefault(c => c != 0, arrayA.Count - arrayB.Count);
         }
 
