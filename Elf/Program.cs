@@ -147,7 +147,7 @@ namespace Elf
             }
         }
 
-        public static IEnumerable<Point> GetAroungArrayOfArrays<T>(T[][] arrayOfArrays, Point pos)
+        public static IEnumerable<Point> GetAroundArrayOfArrays<T>(T[][] arrayOfArrays, Point pos)
         {
             return new[] {new Point(pos.X - 1, pos.Y), new Point(pos.X + 1, pos.Y), new Point(pos.X, pos.Y - 1), new Point(pos.X, pos.Y + 1)}
                 .Where(t => t.X < arrayOfArrays.Length && t.X > -1)
@@ -171,29 +171,21 @@ namespace Elf
             }).ToArray()).ToArray();
             IterateThroughArrayOfArrays(map, (array, x, y) =>
             {
-                var arround = GetAroungArrayOfArrays(map, new Point(x, y));
-                foreach (var item in arround)
+                foreach (var item in GetAroundArrayOfArrays(map, new Point(x, y)))
                 {
-                    var pos = map[item.X][item.Y];
-                    if (pos.Elevation - 1 <= array[x][y].Elevation)
-                    {
-                        array[x][y].AllPaths.Add(pos);
-                    }
+                    if (map[item.X][item.Y].Elevation - 1 > array[x][y].Elevation) continue;
+                    array[x][y].AllPaths.Add(map[item.X][item.Y]);
                 }
 
                 return false;
             });
-            System.Diagnostics.Stopwatch st = new Stopwatch();
-            st.Start();
 
             SolveDay12(map);
-            st.Stop();
-            Console.WriteLine(st.ElapsedMilliseconds);
+
             var range = map.SelectMany(x => x);
             var end = range.First(w => w.End);
             Console.WriteLine(end.Shortest);
-
-            var shortest = int.MaxValue;
+            var shortest = end.Shortest;
             var zero = range.Where(x => x.Elevation == 0 && x.Start == false).OrderByDescending(x => x.Shortest).ToArray();
             foreach (var item in zero)
             {
@@ -208,17 +200,13 @@ namespace Elf
                 item.Visited = true;
                 item.Start = true;
                 SolveDay12(map);
-                if (end.Visited)
-                {
-                    shortest = shortest>  end.Shortest ? end.Shortest:shortest;
-                }
+                if (end.Visited) shortest = shortest > end.Shortest ? end.Shortest : shortest;
             }
+
             Console.WriteLine(shortest);
             Console.WriteLine("Done");
             Console.Read();
         }
-
-        private static int smallest = int.MaxValue;
 
         public static void SolveDay12(Square[][] squares)
         {
@@ -227,10 +215,7 @@ namespace Elf
             while (run)
             {
                 var all = flat.Where(x => x.Visited).Where(x => x.AllPaths.Any(w => w.Visited == false)).OrderBy(x => x.Shortest).ToArray();
-                if (all.Any() == false)
-                {
-                    break;
-                }
+                if (all.Any() == false) break;
 
                 foreach (var sq in all)
                 {
@@ -239,17 +224,11 @@ namespace Elf
                     {
                         x.Visited = true;
                         x.Shortest = sq.Shortest + 1;
-                        if (x.End == true)
-                        {
-                            run = false;
-                            break;
-                        }
-                    }
-
-                    if (run == false)
-                    {
+                        if (!x.End) continue;
+                        run = false;
                         break;
                     }
+                    if (run == false) break;
                 }
             }
         }
