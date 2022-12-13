@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -125,9 +126,7 @@ namespace Elf
 
         public class Square
         {
-            public Dictionary<Guid, bool> PreviousSteps = new Dictionary<Guid, bool>();
-            public int Id;
-
+            public bool Visited { get; set; }
             public int Shortest { get; set; } = int.MaxValue;
             public int Elevation { get; set; }
             public bool Start { get; set; }
@@ -157,72 +156,102 @@ namespace Elf
 
         public static void Day12()
         {
-            var StartElevation = 0;
             var alphabet = "abcdefghijklmnopqrstuvwxyz".ToList();
+            var StartElevation = alphabet.IndexOf('a');
             var EndElevation = alphabet.IndexOf('z');
-            var current = new Point();
             int EndId = 0;
             var map = File.ReadLines("/home/mkb/input.txt").Select(x => x.ToCharArray().Select(x =>
             {
                 return x switch
                 {
-                    'S' => new Square {Elevation = StartElevation, Start = true},
+                    'S' => new Square {Elevation = StartElevation, Start = true, Visited = true, Shortest = 0},
                     'E' => new Square {Elevation = EndElevation, End = true},
                     _ => new Square {Elevation = alphabet.IndexOf(x)}
                 };
             }).ToArray()).ToArray();
-            int i = 0;
             IterateThroughArrayOfArrays(map, (array, x, y) =>
             {
-                array[x][y].Id = i++;
-                if (array[x][y].Start) current = new Point(x, y);
-                if (array[x][y].End) EndId = array[x][y].Id;
                 var arround = GetAroungArrayOfArrays(map, new Point(x, y));
                 foreach (var item in arround)
                 {
                     var pos = map[item.X][item.Y];
-                    if (Math.Abs(pos.Elevation - array[x][y].Elevation) >= 2) continue;
-                    array[x][y].AllPaths.Add(pos);
+                    if (pos.Elevation - 1 <= array[x][y].Elevation)
+                    {
+                        array[x][y].AllPaths.Add(pos);
+                    }
                 }
 
                 return false;
             });
+            System.Diagnostics.Stopwatch st = new Stopwatch();
+            st.Start();
 
-            var solved = SolveDay12(map[current.X][current.Y], EndId);
+            SolveDay12(map);
+            st.Stop();
+            Console.WriteLine(st.ElapsedMilliseconds);
+            var range = map.SelectMany(x => x);
+            var end = range.First(w => w.End);
+            Console.WriteLine(end.Shortest);
 
-            var smalled = solved.Where(x => x.Contains(EndId)).OrderBy(x => x.Count).First();
-            Console.Write($"Done" + smalled.Count);
+            var shortest = int.MaxValue;
+            var zero = range.Where(x => x.Elevation == 0 && x.Start == false).OrderByDescending(x => x.Shortest).ToArray();
+            foreach (var item in zero)
+            {
+                foreach (var reset in range)
+                {
+                    reset.Shortest = int.MaxValue;
+                    reset.Visited = false;
+                    reset.Start = false;
+                }
+
+                item.Shortest = 0;
+                item.Visited = true;
+                item.Start = true;
+                SolveDay12(map);
+                if (end.Visited)
+                {
+                    shortest = shortest>  end.Shortest ? end.Shortest:shortest;
+                }
+            }
+            Console.WriteLine(shortest);
+            Console.WriteLine("Done");
             Console.Read();
         }
 
-        private static HashSet<int> CloneOrNew(HashSet<int> dictionary)
-        {
-            return dictionary is null ? new HashSet<int>() : dictionary.ToHashSet();
-        }
-
         private static int smallest = int.MaxValue;
-        public  static List<HashSet<int>> SolveDay12(Square square, int end, HashSet<int> lookup = null)
+
+        public static void SolveDay12(Square[][] squares)
         {
-            var listDict = new List<HashSet<int>>(){CloneOrNew(lookup)};
-            if (listDict[0].Contains(square.Id) || square.Shortest < listDict[0].Count || smallest < listDict[0].Count)
+            var flat = squares.SelectMany(t => t).ToArray();
+            var run = true;
+            while (run)
             {
-                return listDict;
-            }
-
-            square.Shortest = listDict[0].Count;
-            listDict[0].Add(square.Id);
-            if (square.Id == end)
-            {
-                if (smallest > square.Shortest)
+                var all = flat.Where(x => x.Visited).Where(x => x.AllPaths.Any(w => w.Visited == false)).OrderBy(x => x.Shortest).ToArray();
+                if (all.Any() == false)
                 {
-                    Console.WriteLine(smallest);
-                    smallest = square.Shortest;
+                    break;
                 }
-                return listDict;
-            }
-            
 
-            return square.AllPaths.OrderByDescending(x=> x.Shortest).SelectMany(item => SolveDay12(item, end, listDict[0])).ToList();
+                foreach (var sq in all)
+                {
+                    var paths = sq.AllPaths.Where(x => x.Shortest > (sq.Shortest + 1)).OrderByDescending(x => x.Shortest);
+                    foreach (var x in paths)
+                    {
+                        x.Visited = true;
+                        x.Shortest = sq.Shortest + 1;
+                        if (x.End == true)
+                        {
+                            run = false;
+                            break;
+                        }
+                    }
+
+                    if (run == false)
+                    {
+                        break;
+                    }
+                }
+            }
         }
 
         public static void Day11()
