@@ -128,18 +128,18 @@ namespace Elf
 
         public static void Day13(string input)
         {
-            var pck = input.Split(Environment.NewLine).Where(x => !string.IsNullOrEmpty(x)).Select(x => JsonNode.Parse(x));
-            var partOne = pck
+            var packets = input.Split(Environment.NewLine).Where(x => !string.IsNullOrEmpty(x)).Select(x => JsonNode.Parse(x)).ToArray();
+            var partOne = packets
                 .Chunk(2)
                 .Select((node, i) => Compare(node[0], node[1]) < 0 ? i + 1 : 0)
                 .Sum();
             
-            var decodePackets = new[] {JsonNode.Parse("[[2]]"), JsonNode.Parse("[[6]]")};
+            var dividePackets = new[] {JsonNode.Parse("[[2]]"), JsonNode.Parse("[[6]]")};
 
-            var packets = pck.Union(decodePackets).ToList();
-            packets.Sort(Compare);
+            var decoded = packets.Union(dividePackets).ToList();
+            decoded.Sort(Compare);
             Console.WriteLine(partOne);
-            Console.WriteLine((packets.IndexOf(decodePackets[0]) + 1) * (packets.IndexOf(decodePackets[1]) + 1));
+            Console.WriteLine((decoded.IndexOf(dividePackets[0]) + 1) * (decoded.IndexOf(dividePackets[1]) + 1));
             Console.Read();
         }
 
