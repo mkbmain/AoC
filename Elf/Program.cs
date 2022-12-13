@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -121,7 +122,39 @@ namespace Elf
     {
         static async Task Main(string[] args)
         {
-            Day12();
+            Day13(File.ReadAllText("/home/mkb/input.txt"));
+        }
+
+
+        public static void Day13(string input)
+        {
+            var pck = input.Split(Environment.NewLine).Where(x => !string.IsNullOrEmpty(x)).Select(x => JsonNode.Parse(x));
+            var partOne = pck
+                .Chunk(2)
+                .Select((node, i) => Compare(node[0], node[1]) < 0 ? i + 1 : 0)
+                .Sum();
+            
+            var decodePackets = new[] {JsonNode.Parse("[[2]]"), JsonNode.Parse("[[6]]")};
+
+            var packets = pck.Union(decodePackets).ToList();
+            packets.Sort(Compare);
+            Console.WriteLine(partOne);
+            Console.WriteLine((packets.IndexOf(decodePackets[0]) + 1) * (packets.IndexOf(decodePackets[1]) + 1));
+            Console.Read();
+        }
+
+        private static int Compare(JsonNode nodeA, JsonNode nodeB)
+        {
+            if (nodeA is JsonValue && nodeB is JsonValue)
+            {
+                return (int) nodeA - (int) nodeB;
+            }
+
+            var arrayA = nodeA as JsonArray ?? new JsonArray((int) nodeA);
+            var arrayB = nodeB as JsonArray ?? new JsonArray((int) nodeB);
+            return arrayA.Zip(arrayB)
+                .Select(p => Compare(p.First, p.Second))
+                .FirstOrDefault(c => c != 0, arrayA.Count - arrayB.Count);
         }
 
         public class Square
@@ -215,7 +248,7 @@ namespace Elf
             var items = flat.Where(x => x.Visited).Where(x => x.AllPaths.Any(w => w.Visited == false)).OrderBy(x => x.Shortest).ToList();
             while (run)
             {
-                var all =items.ToArray();
+                var all = items.ToArray();
 
                 items = new List<Square>();
                 if (all.Any() == false) break;
@@ -232,6 +265,7 @@ namespace Elf
                         run = false;
                         break;
                     }
+
                     if (run == false) break;
                 }
             }
